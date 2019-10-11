@@ -38,7 +38,7 @@ class LagomhelloEntity extends PersistentEntity {
   /**
     * The initial state. This is used if there is no snapshotted state to be found.
     */
-  override def initialState: LagomhelloState = LagomhelloState("Hello", LocalDateTime.now.toString)
+  override def initialState: LagomhelloState = LagomhelloState(List("Hello"), LocalDateTime.now.toString)
 
   /**
     * An entity can define different behaviours for different states, so the behaviour
@@ -59,12 +59,16 @@ class LagomhelloEntity extends PersistentEntity {
         }
 
     }.onReadOnlyCommand[Hello, String] {
-
       // Command handler for the Hello command
       case (Hello(name), ctx, state) =>
         // Reply with a message built from the current message, and the name of
         // the person we're meant to say hello to.
-        ctx.reply(s"$message, $name!")
+        ctx.reply(s"${message.head}, $name!")
+
+    }.onReadOnlyCommand[HelloHistory, List[String]] {
+      // Command handler for getting the history of hello messages
+      case (HelloHistory(name, max), ctx, state) =>
+        ctx.reply(state.messages.take(max))
 
     }.onEvent {
 
@@ -72,7 +76,7 @@ class LagomhelloEntity extends PersistentEntity {
       case (GreetingMessageChanged(newMessage), state) =>
         // We simply update the current state to use the greeting message from
         // the event.
-        LagomhelloState(newMessage, LocalDateTime.now().toString)
+        LagomhelloState(newMessage +: state.messages, LocalDateTime.now().toString)
 
     }
   }
@@ -81,7 +85,7 @@ class LagomhelloEntity extends PersistentEntity {
 /**
   * The current state held by the persistent entity.
   */
-case class LagomhelloState(message: String, timestamp: String)
+case class LagomhelloState(messages: List[String], timestamp: String)
 
 object LagomhelloState {
   /**
@@ -158,6 +162,8 @@ object UseGreetingMessage {
   */
 case class Hello(name: String) extends LagomhelloCommand[String]
 
+case class HelloHistory(name: String, max: Int) extends LagomhelloCommand[List[String]]
+
 object Hello {
 
   /**
@@ -170,6 +176,10 @@ object Hello {
     * and deserialized.
     */
   implicit val format: Format[Hello] = Json.format
+}
+
+object HelloHistory {
+  implicit val format: Format[HelloHistory] = Json.format
 }
 
 /**
@@ -185,6 +195,7 @@ object LagomhelloSerializerRegistry extends JsonSerializerRegistry {
   override def serializers: Seq[JsonSerializer[_]] = Seq(
     JsonSerializer[UseGreetingMessage],
     JsonSerializer[Hello],
+    JsonSerializer[HelloHistory],
     JsonSerializer[GreetingMessageChanged],
     JsonSerializer[LagomhelloState]
   )

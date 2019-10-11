@@ -20,6 +20,11 @@ class LagomhelloServiceImpl(persistentEntityRegistry: PersistentEntityRegistry) 
     ref.ask(Hello(id))
   }
 
+  override def helloHistory(id: String, max: Int) = ServiceCall { _ =>
+    // Look up the lagomhello entity for the given ID.
+    val ref = persistentEntityRegistry.refFor[LagomhelloEntity](id)
+    ref.ask(HelloHistory(id, max))
+  }
   override def useGreeting(id: String) = ServiceCall { request =>
     // Look up the lagomhello entity for the given ID.
     val ref = persistentEntityRegistry.refFor[LagomhelloEntity](id)

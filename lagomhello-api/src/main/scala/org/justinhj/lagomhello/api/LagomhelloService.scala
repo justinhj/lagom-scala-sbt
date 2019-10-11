@@ -23,12 +23,12 @@ trait LagomhelloService extends Service {
     */
   def hello(id: String): ServiceCall[NotUsed, String]
 
+  def helloHistory(id: String, max: Int): ServiceCall[NotUsed, List[String]]
+
   /**
-    * Example: curl -H "Content-Type: application/json" -X POST -d '{"message":
-    * "Hi"}' http://localhost:9000/api/hello/Alice
+    * Example: curl -H "Content-Type: application/json" -X POST -d '{"message": "Hi"}' http://localhost:9000/api/hello/Alice
     */
   def useGreeting(id: String): ServiceCall[GreetingMessage, Done]
-
 
   /**
     * This gets published to Kafka.
@@ -40,8 +40,9 @@ trait LagomhelloService extends Service {
     // @formatter:off
     named("lagomhello")
       .withCalls(
-        pathCall("/api/hello:id", hello _),
-        pathCall("/api/hello/:id", useGreeting _)
+        pathCall("/api/hello/:id", hello _),
+        pathCall("/api/hello/:id", useGreeting _),
+        pathCall("/api/hellohistory/:id/:max", helloHistory _),
       )
       .withTopics(
         topic(LagomhelloService.TOPIC_NAME, greetingsTopic _)
@@ -75,8 +76,6 @@ object GreetingMessage {
     */
   implicit val format: Format[GreetingMessage] = Json.format[GreetingMessage]
 }
-
-
 
 /**
   * The greeting message class used by the topic stream.
